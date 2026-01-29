@@ -6,7 +6,8 @@ export interface NegotiationResult {
   risks: string[];
   marketAlignment: string;
   advice: string[];
-  hireSignal: 'Yes' | 'Borderline' | 'No';
+  hireSignal: 'Strong Yes' | 'Yes' | 'Borderline' | 'High Risk' | 'No';
+  estimatedRange: string;
 }
 
 export interface FileData {

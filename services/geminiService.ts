@@ -6,7 +6,8 @@ export const analyzeCompensation = async (
   resume: FileData,
   jobDescription?: string
 ): Promise<NegotiationResult> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use process.env.API_KEY directly as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
     You are Ashan Career Domination AI, a World-class Compensation & Negotiation expert specializing in the Indian tech (PBC, Service, Startup) and corporate market.
@@ -49,9 +50,10 @@ export const analyzeCompensation = async (
           risks: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Reasons for lower offers" },
           marketAlignment: { type: Type.STRING, description: "Detailed overview of where they fit in current Indian market" },
           advice: { type: Type.ARRAY, items: { type: Type.STRING }, description: "5 actionable domination steps" },
-          hireSignal: { type: Type.STRING, enum: ["Yes", "Borderline", "No"] }
+          hireSignal: { type: Type.STRING, enum: ["Yes", "Borderline", "No"] },
+          estimatedRange: { type: Type.STRING, description: "Estimated market value in INR" }
         },
-        required: ["agent", "score", "strengths", "risks", "marketAlignment", "advice", "hireSignal"]
+        required: ["agent", "score", "strengths", "risks", "marketAlignment", "advice", "hireSignal", "estimatedRange"]
       }
     },
   });
