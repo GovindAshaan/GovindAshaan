@@ -14,16 +14,31 @@ const FileUpload = ({ label, accept, onFileSelect, selectedFile, required }: any
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const isText = file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md');
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Data = (event.target?.result as string).split(',')[1];
-        onFileSelect({
-          name: file.name,
-          data: base64Data,
-          mimeType: file.type,
-        });
-      };
-      reader.readAsDataURL(file);
+      
+      if (isText) {
+        reader.onload = (event) => {
+          onFileSelect({
+            name: file.name,
+            data: event.target?.result as string,
+            mimeType: 'text/plain',
+            isText: true
+          });
+        };
+        reader.readAsText(file);
+      } else {
+        reader.onload = (event) => {
+          const base64Data = (event.target?.result as string).split(',')[1];
+          onFileSelect({
+            name: file.name,
+            data: base64Data,
+            mimeType: file.type,
+            isText: false
+          });
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -41,7 +56,7 @@ const FileUpload = ({ label, accept, onFileSelect, selectedFile, required }: any
             <p className="mb-1 text-sm text-slate-600 font-semibold text-center px-4">
               Drop your resume here
             </p>
-            <p className="text-xs text-slate-400">PDF, Word, or Text (Max 5MB)</p>
+            <p className="text-xs text-slate-400 font-bold text-indigo-600">PDF or Text Only</p>
           </div>
           <input type="file" className="hidden" accept={accept} onChange={handleFileChange} />
         </label>
@@ -54,7 +69,7 @@ const FileUpload = ({ label, accept, onFileSelect, selectedFile, required }: any
             <div className="flex flex-col overflow-hidden">
               <span className="text-sm font-bold truncate">{selectedFile.name}</span>
               <span className="text-[10px] font-bold text-indigo-200 uppercase flex items-center">
-                <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Loaded
+                <CheckCircle2 className="w-2.5 h-2.5 mr-1" /> Ready
               </span>
             </div>
           </div>
@@ -183,12 +198,20 @@ const App = () => {
 
   const handleAnalyze = async () => {
     if (!resume) return setError("Resume is required.");
+    
+    // Safety check for Word documents which are not supported by the Gemini API via inlineData
+    if (resume.mimeType.includes('msword') || resume.mimeType.includes('officedocument')) {
+      setError("Word documents (.doc, .docx) are not supported. Please export your resume as a PDF or copy the text into a .txt file.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const data = await analyzeNegotiation(resume, jd);
       setResult(data);
     } catch (err: any) {
+      console.error("ANALYSIS_ERROR:", err);
       setError(err.message || "Request failed.");
     } finally {
       setLoading(false);
@@ -233,22 +256,28 @@ const App = () => {
 
       <main className="max-w-5xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
-          <FileUpload label="Resume" accept=".pdf,.doc,.docx,.txt" onFileSelect={setResume} selectedFile={resume} required />
+          <FileUpload label="Resume" accept=".pdf,.txt" onFileSelect={setResume} selectedFile={resume} required />
           <div className="space-y-3">
-            <label className="text-sm font-bold text-slate-700">Job Description</label>
-            <textarea value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste JD here..." className="w-full h-40 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-400 transition-all text-sm resize-none" />
+            <label className="text-sm font-bold text-slate-700">Job Description (Optional)</label>
+            <textarea value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste JD here for better alignment..." className="w-full h-40 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-400 transition-all text-sm resize-none" />
           </div>
           <button onClick={handleAnalyze} disabled={loading || !resume} className="w-full py-4 bg-indigo-600 rounded-2xl text-white font-black shadow-xl hover:bg-indigo-500 disabled:bg-slate-300 flex items-center justify-center gap-2">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
             {loading ? "Analyzing..." : "Get Strategy"}
           </button>
-          {error && <div className="p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl border border-rose-100 flex gap-2"><AlertTriangle className="w-4 h-4 shrink-0" /> {error}</div>}
+          {error && (
+            <div className="p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl border border-rose-100 flex gap-2 animate-pulse">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
         </div>
         <div className="lg:col-span-2">
           {result ? <ResultCard result={result} /> : (
             <div className="h-full min-h-[400px] border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center p-12 text-center bg-white/50">
               <FileText className="w-12 h-12 text-slate-200 mb-4" />
               <p className="text-slate-400 font-bold">Awaiting Analysis</p>
+              <p className="text-xs text-slate-300 mt-2">Upload a PDF or Text resume to begin</p>
             </div>
           )}
         </div>

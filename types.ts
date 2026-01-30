@@ -14,4 +14,5 @@ export interface FileData {
   name: string;
   data: string;
   mimeType: string;
+  isText?: boolean;
 }
