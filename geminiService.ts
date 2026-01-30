@@ -1,16 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { NegotiationResult, FileData } from "./types";
+import { NegotiationResult, FileData } from "./types.ts";
 
-/**
- * Analyzes career documents to provide negotiation leverage and market value.
- */
 export const analyzeNegotiation = async (
   resume: FileData,
   jobDescription: string
 ): Promise<NegotiationResult> => {
-  // Use the API key from the environment
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY is missing from environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     You are Ashan Career Domination AI, a World-class Compensation & Negotiation Strategist.
@@ -64,10 +65,10 @@ export const analyzeNegotiation = async (
     });
 
     const text = response.text;
-    if (!text) throw new Error("Empty response from Gemini API.");
+    if (!text) throw new Error("Empty response from AI.");
     return JSON.parse(text) as NegotiationResult;
   } catch (error: any) {
-    console.error("Gemini Analysis Error:", error);
+    console.error("Gemini Error:", error);
     throw error;
   }
 };
