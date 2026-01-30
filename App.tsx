@@ -1,19 +1,47 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BrainCircuit, Upload, FileText, X, Sparkles, 
   Loader2, Zap, AlertTriangle, Star, 
-  ShieldCheck, TrendingUp, CheckCircle2
+  ShieldCheck, TrendingUp, CheckCircle2, Lock, ShieldCheck as ShieldIcon
 } from 'lucide-react';
 import { NegotiationResult, FileData } from './types';
 import { analyzeNegotiation } from './geminiService';
 
+// --- CONFIGURATION ---
+// Change this code to whatever you want to give your students
+const STUDENT_ACCESS_CODE = "ASHAN2025"; 
+
 const App = () => {
+  const [authorized, setAuthorized] = useState<boolean>(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [loginError, setLoginError] = useState(false);
+  
   const [resume, setResume] = useState<FileData | null>(null);
   const [jd, setJd] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<NegotiationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for existing session
+  useEffect(() => {
+    const isAuth = localStorage.getItem('ashan_ai_authorized');
+    if (isAuth === 'true') {
+      setAuthorized(true);
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (accessCode.toUpperCase() === STUDENT_ACCESS_CODE) {
+      localStorage.setItem('ashan_ai_authorized', 'true');
+      setAuthorized(true);
+      setLoginError(false);
+    } else {
+      setLoginError(true);
+      setTimeout(() => setLoginError(false), 2000);
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,12 +66,62 @@ const App = () => {
       setResult(data);
     } catch (err: any) {
       console.error(err);
-      setError("Analysis failed. Ensure your API Key is set in Vercel Environment Variables.");
+      setError("Analysis failed. Please try again or contact support.");
     } finally {
       setLoading(false);
     }
   };
 
+  // --- ACCESS GATE SCREEN ---
+  if (!authorized) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full animate-slide-up">
+          <div className="text-center mb-8">
+            <div className="inline-flex p-3 bg-indigo-600 rounded-2xl shadow-2xl shadow-indigo-500/20 mb-4">
+              <BrainCircuit className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-black text-white tracking-tight">Ashan <span className="text-indigo-500">AI</span></h1>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mt-2">Career Domination Engine</p>
+          </div>
+          
+          <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl">
+            <div className="flex items-center space-x-2 text-indigo-400 mb-6 bg-indigo-400/5 p-3 rounded-xl border border-indigo-400/10">
+              <Lock className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Authorized Access Only</span>
+            </div>
+            
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label className="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Elite Access Code</label>
+                <input 
+                  type="password"
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="Enter Student Code"
+                  className={`w-full bg-slate-800 border ${loginError ? 'border-rose-500 shadow-rose-500/10' : 'border-slate-700'} p-4 rounded-2xl text-white placeholder-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold tracking-widest text-center`}
+                />
+              </div>
+              <button 
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center space-x-2 active:scale-95"
+              >
+                <span>Initialize Session</span>
+                <TrendingUp className="w-4 h-4" />
+              </button>
+            </form>
+            
+            {loginError && (
+              <p className="text-rose-500 text-[10px] font-black uppercase text-center mt-4 tracking-widest animate-pulse">Invalid Credentials</p>
+            )}
+          </div>
+          <p className="text-center text-slate-600 text-[10px] font-bold uppercase tracking-widest mt-8">Secure Link • 256-bit Encryption</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- MAIN APP ---
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       <nav className="h-16 glass sticky top-0 z-50 flex items-center justify-between px-6 border-b border-slate-200">
@@ -52,6 +130,10 @@ const App = () => {
             <BrainCircuit className="w-5 h-5 text-white" />
           </div>
           <span className="font-extrabold text-xl tracking-tight">Ashan <span className="text-indigo-600">AI</span></span>
+        </div>
+        <div className="flex items-center space-x-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
+          <ShieldIcon className="w-3 h-3 text-emerald-600" />
+          <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Student Access Active</span>
         </div>
       </nav>
 
