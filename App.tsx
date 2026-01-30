@@ -199,7 +199,6 @@ const App = () => {
   const handleAnalyze = async () => {
     if (!resume) return setError("Resume is required.");
     
-    // Safety check for Word documents which are not supported by the Gemini API via inlineData
     if (resume.mimeType.includes('msword') || resume.mimeType.includes('officedocument')) {
       setError("Word documents (.doc, .docx) are not supported. Please export your resume as a PDF or copy the text into a .txt file.");
       return;
