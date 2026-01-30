@@ -6,28 +6,25 @@ export const analyzeNegotiation = async (
   resume: FileData,
   jobDescription: string
 ): Promise<NegotiationResult> => {
-  // Use process.env.API_KEY directly as per guidelines
+  // Initializing with environment variable as per Vercel/Standard practices
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const prompt = `
-    You are Ashan Career Domination AI, a elite Compensation & Negotiation Strategist for the Indian Tech/Corporate market (PBCs, Startups, Service).
+    You are Ashan Career Domination AI, a World-class Compensation & Negotiation Strategist.
+    Analyze the Resume for the Indian Tech/Corporate market.
     
-    Inputs:
-    - Resume: (Provided as binary)
-    - Target Job: ${jobDescription || "General Market Readiness"}
+    Target Job context: ${jobDescription || "General Market Readiness"}
     
-    Instructions:
-    1. Assess 'Negotiation Power Score' (1-10) based on brand of past companies, tech stack scarcity, and stability.
-    2. Identify 'Strengths' (Specific leverage points to mention during HR calls).
-    3. Identify 'Risks' (Weaknesses the recruiter will exploit to lowball).
-    4. Provide 'Estimated Market Range' for this profile in INR (Fixed + Variable).
-    5. Provide 5 'Domination Steps' for the final salary discussion.
-    6. Identify yourself as 'Ashan AI Dominator' in the 'agent' field.
+    Provide:
+    1. Score (1-10) based on brand value and skill scarcity.
+    2. Leverage Points: What to emphasize.
+    3. Lowball Risks: What the recruiter will target to pay less.
+    4. Market Range (INR).
+    5. 5 Tactical Domination steps for the final call.
     
-    Return the response ONLY as a JSON object matching the requested schema.
+    Response MUST be valid JSON.
   `;
 
-  // Fix contents structure and include agent in schema
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: {
@@ -56,8 +53,6 @@ export const analyzeNegotiation = async (
   });
 
   const text = response.text;
-  if (!text) {
-    throw new Error("Empty response from AI");
-  }
+  if (!text) throw new Error("AI returned an empty response.");
   return JSON.parse(text);
 };
