@@ -11,37 +11,34 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Hide Streamlit Branding & Fix Layout
+# 2. Hide Streamlit Chrome
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .block-container {padding: 0; max-width: 100%;}
-    iframe {border: none; width: 100%;}
-    body { background-color: #f8fafc; }
+    iframe {border: none; width: 100%; height: 100vh;}
     </style>
 """, unsafe_allow_html=True)
 
 # 3. Handle API Key
-# Priority: Streamlit Secrets -> Environment Variables
+# For Streamlit Cloud, the key must be in the "Secrets" section.
 api_key = st.secrets.get("API_KEY", os.environ.get("API_KEY", ""))
 
-# 4. Load the React App
+# 4. Load & Serve Application
 try:
-    # We read the index.html which will then load index.tsx as a module
     with open("index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     
-    # We can inject the API key directly into the window object for the frontend to pick up
-    # Note: process.env.API_KEY is handled by the platform, but this ensures a fallback
+    # Inject API Key into window.process.env for the frontend
     injection = f"<script>window.process = {{ env: {{ API_KEY: '{api_key}' }} }};</script>"
     final_html = html_content.replace("<head>", f"<head>{injection}")
 
-    # Display the component
-    components.html(final_html, height=1800, scrolling=True)
+    # Increase height to ensure it covers the scrollable content
+    components.html(final_html, height=2000, scrolling=True)
 
 except FileNotFoundError:
-    st.error("Deployment Error: 'index.html' not found in root directory. Please check your GitHub repository structure.")
+    st.error("Error: index.html not found. Ensure it is in the same directory as app.py.")
 except Exception as e:
     st.error(f"Application Error: {str(e)}")
